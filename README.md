@@ -3,5 +3,5 @@
 ## Commands
 
 ```
-* (load "src/main.lisp")"
+* (load "src/load.lisp")
 ```
