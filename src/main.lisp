@@ -1,14 +1,15 @@
 (defmacro def-class (hierarchy &rest params)
-  (let ((class-name (get-class-name hierarchy)))
+  (let ((class-name (get-class-name hierarchy))
+        (class-params (get-class-params (hierarchy-as-list hierarchy) params)))
     `(progn
        ; Define class structure 
-       (defvar ,(class-structure-variable class-name) '(,@params))
+       (defvar ,(class-structure-variable class-name) '(,@class-params))
 
        ; Define constructor
-       ,`(def-constructor ,hierarchy ,params)
+       ,`(def-constructor ,hierarchy ,class-params)
        
        ; Define getters 
-       ,@(loop for param in params
+       ,@(loop for param in class-params
                collect `(def-getter ,class-name ,param))
        
        ; Define recognizer 
@@ -38,6 +39,13 @@
   (if (eq (type-of hierarchy) 'CONS)
     (car hierarchy)
     hierarchy))
+
+; TODO think about how to remove eval
+(defun get-class-params (hierarchy params)
+  (let ((class-params params))
+    (loop for class in (cdr hierarchy)
+          do (setf class-params (append class-params (eval (class-structure-variable class)))))
+    (remove-duplicates class-params)))
 
 (defun hierarchy-as-list (hierarchy)
   (if (eq (type-of hierarchy) 'CONS)
