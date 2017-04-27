@@ -1,6 +1,9 @@
 (defmacro def-class (hierarchy &rest params)
   (let ((class-name (get-class-name hierarchy)))
     `(progn
+       ; Define class structure 
+       (defvar ,(class-structure-variable class-name) '(,@params))
+
        ; Define constructor
        ,`(def-constructor ,hierarchy ,params)
        
@@ -40,6 +43,10 @@
   (if (eq (type-of hierarchy) 'CONS)
     hierarchy
     (list hierarchy)))
+
+(defun class-structure-variable (class-name)
+  (intern
+    (format nil "~A-CLASS-STRUCTURE" class-name)))
 
 (defun constructor-name (class-name)
   (intern
