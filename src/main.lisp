@@ -11,6 +11,10 @@
        ; Define getters 
        ,@(loop for param in class-params
                collect `(def-getter ,class-name ,param))
+
+       ; Define setters 
+       ,@(loop for param in class-params
+               collect `(def-setter ,class-name ,param))
        
        ; Define recognizer 
        ,`(def-recognizer ,hierarchy))))
@@ -26,6 +30,10 @@
 (defmacro def-getter (class-name param-name)
   `(defun ,(getter-name class-name param-name) (object)
      (gethash ',param-name (aref object 1))))
+
+(defmacro def-setter (class-name param-name)
+  `(defun ,(setter-name class-name param-name) (object value)
+     (setf (gethash ',param-name (aref object 1)) value)))
 
 (defmacro def-recognizer (hierarchy)
   (let ((class-name (get-class-name hierarchy)))
@@ -63,6 +71,10 @@
 (defun getter-name (class-name param-name)
   (intern
     (format nil "~A-~A" class-name param-name)))
+
+(defun setter-name (class-name param-name)
+  (intern
+    (format nil "SET-~A-~A" class-name param-name)))
 
 (defun recognizer-name (class-name)
   (intern
