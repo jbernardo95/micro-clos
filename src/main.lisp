@@ -1,6 +1,6 @@
 (defmacro def-class (hierarchy &rest params)
   (let ((class-name (get-class-name hierarchy))
-        (class-params (get-class-params (hierarchy-as-list hierarchy) params)))
+        (class-params (get-class-params hierarchy params)))
     `(progn
        ; Define class structure 
        (defvar ,(class-structure-variable class-name) '(,@class-params))
@@ -38,25 +38,28 @@
 (defmacro def-recognizer (hierarchy)
   (let ((class-name (get-class-name hierarchy)))
     `(defun ,(recognizer-name class-name) (object)
-       (let ((hierarchy (aref object 0)))
-         (loop for class in hierarchy
-               do (if (eq class ',class-name)
-                    (return t)))))))
+       (if (typep object '(simple-vector 2))
+         (let ((hierarchy (aref object 0)))
+           (loop for class in hierarchy
+                 do (if (eq class ',class-name)
+                      (return t))))))))
 
 (defun get-class-name (hierarchy)
-  (if (eq (type-of hierarchy) 'CONS)
+  (if (typep hierarchy 'list)
     (car hierarchy)
     hierarchy))
 
 ; TODO think about how to remove eval
 (defun get-class-params (hierarchy params)
-  (let ((class-params params))
-    (loop for class in (cdr hierarchy)
-          do (setf class-params (append class-params (eval (class-structure-variable class)))))
-    (remove-duplicates class-params)))
+  (if (typep hierarchy 'list)
+    (let ((class-params params))
+      (loop for class in (cdr hierarchy)
+            do (setf class-params (append class-params (eval (class-structure-variable class)))))
+      (remove-duplicates class-params))
+    params))
 
 (defun hierarchy-as-list (hierarchy)
-  (if (eq (type-of hierarchy) 'CONS)
+  (if (typep hierarchy 'list)
     hierarchy
     (list hierarchy)))
 
