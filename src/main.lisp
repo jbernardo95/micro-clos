@@ -6,7 +6,7 @@
        (defvar ,(class-structure-variable class-name) '(,@class-params))
 
        ; Define constructor
-       ,`(def-constructor ,hierarchy ,class-params)
+       ,`(def-constructor ,class-name ,hierarchy ,class-params)
        
        ; Define getters 
        ,@(loop for param in class-params
@@ -17,15 +17,14 @@
                collect `(def-setter ,class-name ,param))
        
        ; Define recognizer 
-       ,`(def-recognizer ,hierarchy))))
+       ,`(def-recognizer ,class-name))))
 
-(defmacro def-constructor (hierarchy params)
-  (let ((class-name (get-class-name hierarchy)))
-    `(defun ,(constructor-name class-name) (&key ,@params)
-       (let ((variables (make-hash-table)))
-         ,@(loop for param in params
-                 collect `(setf (gethash ',param variables) ,param))
-         (vector ',(hierarchy-as-list hierarchy) variables)))))
+(defmacro def-constructor (class-name hierarchy params)
+  `(defun ,(constructor-name class-name) (&key ,@params)
+     (let ((variables (make-hash-table)))
+       ,@(loop for param in params
+               collect `(setf (gethash ',param variables) ,param))
+       (vector ',(hierarchy-as-list hierarchy) variables))))
 
 (defmacro def-getter (class-name param-name)
   `(defun ,(getter-name class-name param-name) (object)
@@ -35,11 +34,11 @@
   `(defun ,(setter-name class-name param-name) (object value)
      (setf (gethash ',param-name (aref object 1)) value)))
 
-(defmacro def-recognizer (hierarchy)
-  (let ((class-name (get-class-name hierarchy)))
-    `(defun ,(recognizer-name class-name) (object)
-       (if (typep object '(simple-vector 2))
-         (let ((hierarchy (aref object 0)))
+(defmacro def-recognizer (class-name)
+  `(defun ,(recognizer-name class-name) (object)
+     (if (typep object '(simple-vector 2))
+       (let ((hierarchy (aref object 0)))
+         (if (typep hierarchy 'list)
            (loop for class in hierarchy
                  do (if (eq class ',class-name)
                       (return t))))))))
@@ -49,7 +48,7 @@
     (car hierarchy)
     hierarchy))
 
-; TODO think about how to remove eval
+; TODO get alternative to eval
 (defun get-class-params (hierarchy params)
   (if (typep hierarchy 'list)
     (let ((class-params params))
