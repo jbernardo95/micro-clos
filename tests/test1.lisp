@@ -1,3 +1,5 @@
+(load "src/load.lisp")
+
 ; Class Definition
 (def-class person
   name

@@ -1,18 +1,28 @@
-(defvar class-structures (make-hash-table)) ; So that there is no class-structures not defined error
+; So that there is no class-structures not defined error
+(defvar class-hierarchies (make-hash-table))
+(defvar class-structures (make-hash-table))
 
 (defmacro def-class (hierarchy &rest params)
   (let ((class-name (get-class-name hierarchy))
+        (class-hierarchy (get-class-hierarchy hierarchy))
         (class-params (get-class-params hierarchy params)))
     `(progn
+       ; Define class hierarchies hashtable
+       (if (not (boundp 'class-hierarchies))
+         (defvar class-hierarchies (make-hash-table)))
+
        ; Define class structures hashtable
        (if (not (boundp 'class-structures))
          (defvar class-structures (make-hash-table)))
+
+       ; Save class hierarchy 
+       (setf (gethash ',class-name class-hierarchies) ',class-hierarchy)
 
        ; Save class structure 
        (setf (gethash ',class-name class-structures) ',class-params)
 
        ; Define constructor
-       ,`(def-constructor ,class-name ,hierarchy ,class-params)
+       ,`(def-constructor ,class-name ,class-hierarchy ,class-params)
 
        ; Define recognizer 
        ,`(def-recognizer ,class-name)
@@ -30,7 +40,7 @@
      (let ((variables (make-hash-table)))
        ,@(loop for param in params
                collect `(setf (gethash ',param variables) ,param))
-       (vector ',(hierarchy-as-list hierarchy) variables))))
+       (vector ',hierarchy variables))))
 
 (defmacro def-getter (class-name param-name)
   `(defun ,(getter-name class-name param-name) (object)
@@ -61,18 +71,20 @@
     (car hierarchy)
     hierarchy))
 
-(defun get-class-params (hierarchy params)
+(defun get-class-hierarchy (hierarchy)
   (if (typep hierarchy 'list)
-    (let ((class-params params))
+    (let ((class-hierarchy hierarchy))
       (loop for class in (cdr hierarchy)
-            do (setf class-params (append class-params (gethash class class-structures))))
-      (remove-duplicates class-params))
-    params))
-
-(defun hierarchy-as-list (hierarchy)
-  (if (typep hierarchy 'list)
-    hierarchy
+            do (setf class-hierarchy (append class-hierarchy (gethash class class-hierarchies))))
+      (remove-duplicates class-hierarchy))
     (list hierarchy)))
+
+(defun get-class-params (hierarchy params)
+  (let ((class-hierarchy (get-class-hierarchy hierarchy))
+        (class-params params))
+    (loop for class in (cdr class-hierarchy)
+          do (setf class-params (append class-params (gethash class class-structures))))
+    (remove-duplicates class-params)))
 
 (defun constructor-name (class-name)
   (intern
